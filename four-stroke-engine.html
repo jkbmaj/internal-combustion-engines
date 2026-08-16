@@ -41,8 +41,8 @@
   <span><span class="dot" style="background:#7f8dff"></span>Sprężanie</span>
   <span><span class="dot" style="background:#ff8a2a"></span>Praca</span>
   <span><span class="dot" style="background:#9aa3ad"></span>Wydech</span>
-  <span><span class="dot" style="background:#8ec4ff"></span>Mieszanka (powietrze)</span>
-  <span><span class="dot" style="background:#ffb347"></span>Paliwo</span>
+  <span><span class="dot" style="background:#8ec4ff"></span>Powietrze (dolot)</span>
+  <span><span class="dot" style="background:#ffb347"></span>Wtrysk paliwa (GDI)</span>
   <span><span class="dot" style="background:#ffe98a"></span>Iskra</span>
 </div>
 <div class="row">
@@ -305,6 +305,29 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     g.closePath(); g.fill();
     g.beginPath(); g.arc(ccx, ccy, 2, 0, TAU); g.fillStyle = '#20262f'; g.fill();
   }
+  // GDI: side-mounted direct injector, spraying while the intake valve is open
+  g.save();
+  g.translate(-17, top + 3); g.rotate(0.7);
+  g.fillStyle = '#9aa5b3'; g.fillRect(-2.5, -18, 5, 15);         // injector body
+  g.fillStyle = '#7f8a99'; g.fillRect(-4.5, -20, 9, 5);          // clamp
+  g.beginPath(); g.moveTo(-2, -3); g.lineTo(2, -3); g.lineTo(0, 3); g.closePath();
+  g.fillStyle = '#cfd6df'; g.fill();                             // nozzle
+  if (inLift > 2) {
+    g.strokeStyle = '#ffb347'; g.lineWidth = 1.4; g.globalAlpha = 0.9;
+    for (let k = 0; k < 4; k++) {
+      const a3 = (k - 1.5) * 0.28;
+      g.beginPath(); g.moveTo(0, 3);
+      g.lineTo(Math.sin(a3) * 14, 3 + Math.cos(a3) * 13);
+      g.stroke();
+    }
+    g.fillStyle = '#ffb347';
+    for (let k = 0; k < 3; k++) {
+      const u3 = (ph / PI + k / 3) % 1;
+      g.beginPath(); g.arc((k - 1) * 4 * u3, 4 + 14 * u3, 1.4, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  g.restore();
   g.fillStyle = '#cfd6df'; g.fillRect(-2.5, top - 30, 5, 14);    // plug insulator
   g.fillStyle = '#8a94a3'; g.fillRect(-4.5, top - 17, 9, 9);     // plug hex
   g.fillStyle = '#cfd6df'; g.fillRect(-1, top - 8, 2, 8);        // electrode
@@ -339,7 +362,7 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     for (let k = 0; k < 6; k++) {
       const u = (f * 2 + k / 6) % 1;
       const [px, py] = plerp(path, u);
-      const fuel = k % 3 === 2;
+      const fuel = false;            // GDI: fuel is injected directly
       g.globalAlpha = Math.sin(u * PI) * 0.9;
       g.fillStyle = fuel ? '#ffb347' : '#8ec4ff';
       g.beginPath(); g.arc(px, py, fuel ? 2 : 2.5, 0, TAU); g.fill();

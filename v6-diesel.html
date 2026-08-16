@@ -319,7 +319,8 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     g.globalAlpha = 1;
   }
   // glow plug: heater tip glows periodically (cold-start aid)
-  const gpI = Math.max(0, Math.sin(performance.now() / 1600));
+  const gpP = (performance.now() % 10000) / 10000;   // one ~3 s heat-up every 10 s
+  const gpI = gpP < 0.3 ? Math.sin(PI * gpP / 0.3) : 0;
   g.fillStyle = '#7f8a99'; g.fillRect(-7, top - 14, 3, 13);
   g.fillStyle = gpI > 0.05 ? `rgba(255,${Math.round(120 + 90 * gpI)},50,1)` : '#4a5461';
   g.beginPath(); g.arc(-5.5, top + 2, 2.3, 0, TAU); g.fill();
