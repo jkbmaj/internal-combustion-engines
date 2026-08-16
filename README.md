@@ -36,7 +36,16 @@ z naprzemiennym pochyleniem ±7,5°
 ([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/boxer-benzyna.html) · [źródło](boxer-benzyna.html));
 **Gwiazdowy R5** — pięć cylindrów co 72° wokół wspólnego wykorbienia,
 zapłon co 144° w kolejności 1‑3‑5‑2‑4
-([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/gwiazdowy-benzyna.html) · [źródło](gwiazdowy-benzyna.html)).
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/gwiazdowy-benzyna.html) · [źródło](gwiazdowy-benzyna.html));
+**V10** — rozwarcie 72°, zapłon co 72°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v10-benzyna.html) · [źródło](v10-benzyna.html));
+**V12** — rozwarcie 60°, zapłon co 60°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v12-benzyna.html) · [źródło](v12-benzyna.html));
+**V16** — rozwarcie 45°, zapłon co 45°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v16-benzyna.html) · [źródło](v16-benzyna.html));
+**W16** — dwa wąskie V 15° rozchylone pod kątem 90° (cylindry na ±37,5° i ±52,5°),
+zapłon co 45°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/w16-benzyna.html) · [źródło](w16-benzyna.html)).
 
 ## Narzędzia prezentacyjne
 
