@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silnik Diesla V8 · 90° — animacja czterosuwu</title>
+<style>
+  :root { --bg:#101318; --panel:#1a1f27; --text:#d7dde6; --dim:#7b8494; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:system-ui, -apple-system, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:16px;
+  }
+  h1 { font-size:18px; font-weight:600; margin:6px 0 2px; letter-spacing:.5px; }
+  .sub { font-size:12px; color:var(--dim); margin-bottom:8px; }
+  .legend { display:flex; gap:16px; font-size:12px; color:var(--dim); margin-bottom:12px; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; vertical-align:-1px; }
+  canvas { background:var(--panel); border-radius:12px; max-width:100%; height:auto; }
+  .row { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
+  .engine { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .engine .cap { font-size:12px; color:var(--dim); letter-spacing:1px; }
+  .controls {
+    display:flex; align-items:center; gap:12px; margin-top:12px;
+    font-size:13px; color:var(--dim);
+  }
+  input[type=range] { width:180px; accent-color:#e8863a; }
+  button {
+    background:#242b36; color:var(--text); border:1px solid #333c4a;
+    border-radius:6px; padding:5px 14px; font-size:13px; cursor:pointer;
+  }
+  button:hover { background:#2c3543; }
+
+  .nav { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .nav a { color:var(--dim); font-size:12px; text-decoration:none;
+           border:1px solid #333c4a; padding:3px 10px; border-radius:6px; }
+  .nav a:hover { color:var(--text); background:#242b36; }
+  .nav a.cur { color:var(--text); border-color:#e8863a; }
+</style>
+</head>
+<body>
+<h1>Silnik Diesla — V8 · 90°</h1>
+<div class="sub">Widok wzdłuż wału, kamera 45° w dół · zapłon co 90° · wtrysk paliwa przy TDC, zapłon samoczynny</div>
+<div class="nav">
+  <a href="r4-benzyna.html">R4 benzyna</a>
+  <a href="v6-benzyna.html">V6 · 60° benzyna</a>
+  <a href="v8-benzyna.html">V8 · 90° benzyna</a>
+  <a href="r4-diesel.html">R4 diesel</a>
+  <a href="v6-diesel.html">V6 · 60° diesel</a>
+  <a href="v8-diesel.html" class="cur">V8 · 90° diesel</a>
+</div>
+<div class="legend">
+  <span><span class="dot" style="background:#4fa0ff"></span>Ssanie</span>
+  <span><span class="dot" style="background:#7f8dff"></span>Sprężanie</span>
+  <span><span class="dot" style="background:#ff8a2a"></span>Praca</span>
+  <span><span class="dot" style="background:#9aa3ad"></span>Wydech</span>
+  <span><span class="dot" style="background:#8ec4ff"></span>Powietrze (bez paliwa)</span>
+  <span><span class="dot" style="background:#ffb347"></span>Wtrysk paliwa</span>
+  <span><span class="dot" style="background:#ff9a3d"></span>Świeca żarowa</span>
+</div>
+<canvas id="c3" width="600" height="720"></canvas>
+<div class="controls">
+  <button id="pause">Pauza</button>
+  <label>Prędkość <input id="speed" type="range" min="0.2" max="3" step="0.05" value="1"></label>
+  <span id="rpm"></span>
+</div>
+
+<script>
+'use strict';
+const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+const c3 = document.getElementById('c3'), g3 = c3.getContext('2d');
+c3.style.width = '600px'; c3.style.height = '720px';
+c3.width = Math.round(600 * DPR); c3.height = Math.round(720 * DPR);
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---- strokes & charge color ---- */
+const STROKES = [
+  { name: 'SSANIE',    color: '#4fa0ff' },
+  { name: 'SPRĘŻANIE', color: '#7f8dff' },
+  { name: 'PRACA',     color: '#ff8a2a' },
+  { name: 'WYDECH',    color: '#9aa3ad' },
+];
+const strokeIndex = t => Math.floor(t / PI) % 4;
+
+// blue intake -> densifying blue -> white/orange combustion -> grey exhaust
+function gasStyle(t) {
+  let r, g, b, a, f;
+  if (t < PI) {
+    f = t / PI;
+    r = 80; g = 155; b = 255; a = 0.14 + 0.30 * f;
+  } else if (t < 2 * PI) {
+    f = (t - PI) / PI;
+    r = lerp(80, 45, f); g = lerp(155, 110, f); b = lerp(255, 235, f);
+    a = lerp(0.44, 0.78, f);
+  } else if (t < 3 * PI) {
+    f = (t - 2 * PI) / PI;
+    if (f < 0.12) {
+      const k = f / 0.12;
+      r = 255; g = lerp(240, 145, k); b = lerp(190, 35, k); a = 0.92;
+    } else {
+      const k = (f - 0.12) / 0.88;
+      r = lerp(255, 175, k); g = lerp(145, 125, k); b = lerp(35, 110, k);
+      a = lerp(0.92, 0.6, k);
+    }
+  } else {
+    f = (t - 3 * PI) / PI;
+    r = lerp(165, 140, f); g = lerp(150, 145, f); b = lerp(140, 152, f);
+    a = lerp(0.58, 0.14, f);
+  }
+  return `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`;
+}
+
+/* ---- per-cylinder phase chip ---- */
+function strokeChip(g, x, y, w, h, ph, label) {
+  const st = STROKES[strokeIndex(ph)];
+  g.font = '600 12px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.beginPath(); g.roundRect(x, y, w, h, 6);
+  g.fillStyle = '#242b36'; g.fill();
+  g.save();
+  g.beginPath(); g.roundRect(x, y, w * ((ph % PI) / PI), h, 6); g.clip();
+  g.globalAlpha = 0.45; g.fillStyle = st.color; g.fillRect(x, y, w, h);
+  g.restore(); g.globalAlpha = 1;
+  g.strokeStyle = st.color; g.lineWidth = 2;
+  g.beginPath(); g.roundRect(x, y, w, h, 6); g.stroke();
+  g.fillStyle = '#d7dde6';
+  g.fillText(label + ' · ' + st.name[0] + st.name.slice(1, 3).toLowerCase(), x + w / 2, y + h / 2 + 1);
+}
+
+/* ---- shared cylinder geometry ---- */
+const GEO = { R: 32, L: 104, BHW: 24, WALL: 8, PH: 28, CO: 15 };
+const DECK = GEO.R + GEO.L + 22;          // crank center -> deck, along bore axis
+const LINER = 2 * GEO.R + GEO.PH + 22;    // liner length below deck
+
+// slider-crank: wrist-pin distance from crank center (TDC at ph = 0 mod 2π)
+function slider(ph) {
+  const s = GEO.R * Math.sin(ph);
+  return GEO.R * Math.cos(ph) + Math.sqrt(GEO.L * GEO.L - s * s);
+}
+
+/* ---- timing drive: chain + sprockets ---- */
+function chain(g, pts, crank) {
+  g.lineJoin = 'round';
+  g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+  g.closePath();
+  g.strokeStyle = '#2a313c'; g.lineWidth = 6; g.stroke();
+  g.strokeStyle = '#4d5866'; g.lineWidth = 2; g.stroke();
+  const segs = []; let tot = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    segs.push([a, b, l]); tot += l;
+  }
+  // link speed tied to crank angle; 168/(4pi) px/rad keeps the 720-degree loop seamless
+  const spacing = 14, off = (spacing - (crank * (168 / (4 * PI))) % spacing) % spacing; // clockwise, like crank & cams
+  g.fillStyle = '#98a2b0';
+  for (let d = off; d < tot; d += spacing) {
+    let r = d;
+    for (const [a, b, l] of segs) {
+      if (r <= l) {
+        const u = r / l;
+        g.beginPath();
+        g.arc(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, 1.7, 0, TAU);
+        g.fill();
+        break;
+      }
+      r -= l;
+    }
+  }
+}
+
+function sprocket(g, x, y, r, ang) {
+  g.beginPath(); g.arc(x, y, r, 0, TAU);
+  g.fillStyle = '#39424f'; g.fill();
+  g.strokeStyle = '#5b6675'; g.lineWidth = 2; g.stroke();
+  g.beginPath(); g.arc(x + Math.cos(ang) * (r - 4), y + Math.sin(ang) * (r - 4), 2, 0, TAU);
+  g.fillStyle = '#20262f'; g.fill();
+  g.beginPath(); g.arc(x, y, 2.5, 0, TAU); g.fillStyle = '#20262f'; g.fill();
+}
+
+// one cylinder slice seen along the crank axis; bore axis tilted phi from vertical
+function drawCyl(g, bx, by, phi, ph, shade, front) {
+  g.save();
+  if (shade < 1) g.filter = `brightness(${shade})`;
+  g.translate(bx, by);
+
+  // crank end-on: dashed pin orbit, shaded journal, web + shaped counterweight
+  g.setLineDash([4, 4]);
+  g.strokeStyle = 'rgba(122,132,148,0.35)'; g.lineWidth = 1.2;
+  g.beginPath(); g.arc(0, 0, GEO.R, 0, TAU); g.stroke();
+  g.setLineDash([]);
+  if (front) {
+    const beta = Math.atan2(-Math.cos(ph), Math.sin(ph)); // pin angle from +x
+    const cw = g.createRadialGradient(0, 0, 6, 0, 0, 44);
+    cw.addColorStop(0, '#4a5463'); cw.addColorStop(1, '#313944');
+    g.fillStyle = cw;
+    g.beginPath();                                        // counterweight lobe
+    g.arc(0, 0, 42, beta + PI - 0.95, beta + PI + 0.95);
+    g.arc(0, 0, 15, beta + PI + 1.35, beta + PI - 1.35, true);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#242b35'; g.lineWidth = 1.5; g.stroke();
+    g.beginPath();                                        // crank web toward pin
+    g.arc(0, 0, 26, beta - 0.5, beta + 0.5);
+    g.lineTo(0, 0); g.closePath();
+    g.fillStyle = '#3a4351'; g.fill();
+  }
+  const mj = g.createRadialGradient(-3, -3, 1, 0, 0, 10);
+  mj.addColorStop(0, '#5b6675'); mj.addColorStop(1, '#39424f');
+  g.beginPath(); g.arc(0, 0, 9, 0, TAU);
+  g.fillStyle = mj; g.fill();
+  g.strokeStyle = '#4d5866'; g.lineWidth = 2; g.stroke();
+  g.beginPath(); g.arc(0, 0, 3, 0, TAU); g.fillStyle = '#20262f'; g.fill();
+
+  g.rotate(phi);                            // bore axis is local -y
+  const top = -DECK;
+  const OW = GEO.BHW + GEO.WALL;
+  const mg = g.createLinearGradient(-OW, 0, OW, 0);   // cast-metal shading
+  mg.addColorStop(0, '#525e6f'); mg.addColorStop(0.12, '#3c4552');
+  mg.addColorStop(0.88, '#3c4552'); mg.addColorStop(1, '#2c333e');
+  g.fillStyle = mg;
+  g.beginPath(); g.roundRect(-OW, top - 22, OW * 2, 22, [5, 5, 0, 0]); g.fill(); // head
+  g.fillRect(-OW, top, GEO.WALL, LINER);              // cylinder walls
+  g.fillRect(GEO.BHW, top, GEO.WALL, LINER);
+  g.fillStyle = '#232a34';                            // head gasket line
+  g.fillRect(-OW, top - 2, OW * 2, 2);
+  g.fillStyle = '#2c333e';                            // head bolts
+  for (const hx of [-OW + 5, OW - 5]) { g.beginPath(); g.arc(hx, top - 17, 2.2, 0, TAU); g.fill(); }
+  g.fillStyle = '#333b47';                            // cooling fins
+  for (let fy = top + 12; fy < top + 72; fy += 12) {
+    g.fillRect(-OW - 4, fy, 4, 3); g.fillRect(OW, fy, 4, 3);
+  }
+  const bg = g.createLinearGradient(-GEO.BHW, 0, GEO.BHW, 0); // honed bore sheen
+  bg.addColorStop(0, '#20262f'); bg.addColorStop(0.25, '#141920');
+  bg.addColorStop(1, '#10141a');
+  g.fillStyle = bg;
+  g.fillRect(-GEO.BHW, top, GEO.BHW * 2, LINER);
+
+  const s = slider(ph);
+  const crown = -s - GEO.CO;
+  g.fillStyle = gasStyle(ph);               // charge, color-coded by stroke
+  g.fillRect(-GEO.BHW, top, GEO.BHW * 2, crown - top);
+  if (ph >= 2 * PI && ph < 2 * PI + 0.4) {  // ignition flash
+    const gl = g.createRadialGradient(0, top + 12, 2, 0, top + 12, 55);
+    gl.addColorStop(0, 'rgba(255,235,150,0.85)');
+    gl.addColorStop(1, 'rgba(255,120,20,0)');
+    g.fillStyle = gl;
+    g.fillRect(-GEO.BHW, top, GEO.BHW * 2, crown - top);
+  }
+  // --- head detail: ports, valves, spark plug, mixture flow ---
+  const inLift = ph < PI ? 8 * Math.sin(ph) : 0;                 // intake valve
+  const exLift = ph >= 3 * PI ? 8 * Math.sin(ph - 3 * PI) : 0;   // exhaust valve
+  g.fillStyle = '#242b36';                                       // cam carrier / cover
+  g.beginPath(); g.roundRect(-26, top - 46, 52, 26, 6); g.fill();
+  g.strokeStyle = '#2c333e'; g.lineWidth = 1.5; g.stroke();
+  const IN_PIPE = [[-46, top - 28], [-20, top - 14], [-11, top - 6]];
+  const EX_PIPE = [[11, top - 6], [20, top - 14], [46, top - 28]];
+  for (const [pts, tint] of [[IN_PIPE, inLift > 0.5 ? 'rgba(80,155,255,0.35)' : null],
+                             [EX_PIPE, exLift > 0.5 ? 'rgba(160,162,168,0.4)' : null]]) {
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k < pts.length; k++) g.lineTo(pts[k][0], pts[k][1]);
+    g.strokeStyle = '#39424f'; g.lineWidth = 13; g.stroke();
+    g.strokeStyle = '#161b23'; g.lineWidth = 8; g.stroke();
+    if (tint) { g.strokeStyle = tint; g.stroke(); }
+  }
+  for (const [vx, lift, col] of [[-11, inLift, '#c3cbd6'], [11, exLift, '#98a2b0']]) {
+    if (lift > 0.5) { g.fillStyle = '#10141a'; g.fillRect(vx - 8, top - 2, 16, lift + 2); }
+    g.fillStyle = '#20262f';                                     // valve guide
+    g.fillRect(vx - 3, top - 20, 6, 6);
+    g.strokeStyle = '#7f8a99'; g.lineWidth = 1.3;                // spring (compresses on lift)
+    g.beginPath();
+    const sy0 = top - 18 + lift, sy1 = top - 4;
+    g.moveTo(vx, sy0);
+    for (let z = 1; z <= 6; z++) g.lineTo(vx + (z % 2 ? 5 : -5), sy0 + (sy1 - sy0) * z / 6);
+    g.stroke();
+    g.fillStyle = col;
+    g.fillRect(vx - 1.5, top - 18 + lift, 3, 16);                // stem
+    g.beginPath();                                               // poppet with 45° seat
+    g.moveTo(vx - 8, top + lift - 2); g.lineTo(vx + 8, top + lift - 2);
+    g.lineTo(vx + 6, top + lift + 2); g.lineTo(vx - 6, top + lift + 2);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#111'; g.lineWidth = 1; g.stroke();
+  }
+  // DOHC: cam lobes turn at half crank speed, pressing the bucket tappets
+  for (const [vx, lam, lift] of [[-11, ph / 2 + PI / 4, inLift],
+                                 [11, ph / 2 - 1.25 * PI, exLift]]) {
+    g.fillStyle = '#39424f';                                     // bucket tappet
+    g.fillRect(vx - 5, top - 22 + lift, 10, 4);
+    const ccx = vx, ccy = top - 31;
+    g.fillStyle = '#5b6675';
+    g.beginPath(); g.arc(ccx, ccy, 5.5, 0, TAU); g.fill();       // base circle
+    g.beginPath();                                               // lobe
+    g.moveTo(ccx + Math.cos(lam + 1.1) * 5, ccy + Math.sin(lam + 1.1) * 5);
+    g.quadraticCurveTo(ccx + Math.cos(lam) * 13, ccy + Math.sin(lam) * 13,
+                       ccx + Math.cos(lam - 1.1) * 5, ccy + Math.sin(lam - 1.1) * 5);
+    g.closePath(); g.fill();
+    g.beginPath(); g.arc(ccx, ccy, 2, 0, TAU); g.fillStyle = '#20262f'; g.fill();
+  }
+  g.fillStyle = '#9aa5b3'; g.fillRect(-3, top - 30, 6, 18);      // injector body
+  g.fillStyle = '#7f8a99'; g.fillRect(-5, top - 14, 10, 6);      // clamp
+  g.beginPath(); g.moveTo(-2, top - 8); g.lineTo(2, top - 8);    // nozzle
+  g.lineTo(0, top + 2); g.closePath();
+  g.fillStyle = '#cfd6df'; g.fill();
+  if (ph >= 2 * PI - 0.25 && ph < 2 * PI + 0.3) {                // fuel injection at TDC
+    g.strokeStyle = '#ffb347'; g.lineWidth = 1.5; g.globalAlpha = 0.9;
+    for (let k = 0; k < 5; k++) {
+      g.beginPath(); g.moveTo(0, top + 2);
+      g.lineTo((k - 2) * 5, top + 14 - Math.abs(k - 2) * 2);
+      g.stroke();
+    }
+    g.fillStyle = '#ffb347';
+    for (let k = 0; k < 4; k++) {
+      const u2 = (ph * 3 + k * 0.25) % 1;
+      g.beginPath(); g.arc((k - 1.5) * 4 * u2, top + 4 + 12 * u2, 1.5, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  // glow plug: heater tip glows periodically (cold-start aid)
+  const gpI = Math.max(0, Math.sin(performance.now() / 1600));
+  g.fillStyle = '#7f8a99'; g.fillRect(-7, top - 14, 3, 13);
+  g.fillStyle = gpI > 0.05 ? `rgba(255,${Math.round(120 + 90 * gpI)},50,1)` : '#4a5461';
+  g.beginPath(); g.arc(-5.5, top + 2, 2.3, 0, TAU); g.fill();
+  if (gpI > 0.05) {
+    const gg = g.createRadialGradient(-5.5, top + 2, 1, -5.5, top + 2, 10);
+    gg.addColorStop(0, `rgba(255,170,70,${(0.7 * gpI).toFixed(3)})`);
+    gg.addColorStop(1, 'rgba(255,140,40,0)');
+    g.fillStyle = gg;
+    g.beginPath(); g.arc(-5.5, top + 2, 10, 0, TAU); g.fill();
+  }
+  // fuel-air mixture in (blue air + amber fuel droplets), exhaust gas out
+  const plerp = (pts, u) => {
+    const n = pts.length - 1, x = Math.min(u, 0.999) * n, i = x | 0, f = x - i;
+    return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f,
+            pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f];
+  };
+  if (inLift > 0.5) {
+    const f = ph / PI;
+    const path = [[-46, top - 28], [-20, top - 14], [-11, top - 2], [-6, top + 22]];
+    for (let k = 0; k < 6; k++) {
+      const u = (f * 2 + k / 6) % 1;
+      const [px, py] = plerp(path, u);
+      const fuel = false;            // diesel: intake is pure air
+      g.globalAlpha = Math.sin(u * PI) * 0.9;
+      g.fillStyle = fuel ? '#ffb347' : '#8ec4ff';
+      g.beginPath(); g.arc(px, py, fuel ? 2 : 2.5, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  if (exLift > 0.5) {
+    const f = (ph - 3 * PI) / PI;
+    const path = [[6, top + 22], [11, top - 2], [20, top - 14], [46, top - 28]];
+    for (let k = 0; k < 6; k++) {
+      const u = (f * 2 + k / 6) % 1;
+      const [px, py] = plerp(path, u);
+      g.globalAlpha = Math.sin(u * PI) * 0.85;
+      g.fillStyle = '#c2c8cf';
+      g.beginPath(); g.arc(px, py, 2.5, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+
+  // tapered connecting rod with big-end cap, then piston over it
+  const jx = GEO.R * Math.sin(ph), jy = -GEO.R * Math.cos(ph);
+  {
+    const dx = jx, dy = jy + s, len = Math.hypot(dx, dy);
+    const nx = -dy / len, ny = dx / len;                  // rod normal
+    const rg = g.createLinearGradient(0, -s, jx, jy);
+    rg.addColorStop(0, '#aeb8c6'); rg.addColorStop(1, '#78828f');
+    g.fillStyle = rg;
+    g.beginPath();
+    g.moveTo(nx * 4.5, -s + ny * 4.5);
+    g.lineTo(jx + nx * 8, jy + ny * 8);
+    g.lineTo(jx - nx * 8, jy - ny * 8);
+    g.lineTo(-nx * 4.5, -s - ny * 4.5);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#39424f'; g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.arc(jx, jy, 10, 0, TAU);             // big-end cap
+    g.fillStyle = '#6b7583'; g.fill();
+    g.strokeStyle = '#39424f'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = '#2c333e';                              // cap bolts
+    for (const sgn of [1, -1]) {
+      g.beginPath(); g.arc(jx + nx * 6.5 * sgn, jy + ny * 6.5 * sgn, 1.6, 0, TAU); g.fill();
+    }
+  }
+  const pg = g.createLinearGradient(-GEO.BHW, 0, GEO.BHW, 0);
+  pg.addColorStop(0, '#828d9c'); pg.addColorStop(0.35, '#cdd5e0');
+  pg.addColorStop(0.65, '#b4bdc9'); pg.addColorStop(1, '#79828f');
+  g.fillStyle = pg;
+  g.beginPath(); g.roundRect(-GEO.BHW + 1, crown, GEO.BHW * 2 - 2, GEO.PH, [1, 1, 5, 5]); g.fill();
+  g.strokeStyle = 'rgba(224,230,238,0.7)'; g.lineWidth = 1;   // crown highlight
+  g.beginPath(); g.moveTo(-GEO.BHW + 3, crown + 1.5); g.lineTo(GEO.BHW - 3, crown + 1.5); g.stroke();
+  g.strokeStyle = '#39424f'; g.lineWidth = 1.6;               // compression rings
+  for (const ry of [crown + 5, crown + 9]) {
+    g.beginPath(); g.moveTo(-GEO.BHW + 1, ry); g.lineTo(GEO.BHW - 1, ry); g.stroke();
+  }
+  g.strokeStyle = '#4a5461'; g.lineWidth = 1;                 // oil-control ring pair
+  for (const ry of [crown + 13, crown + 15]) {
+    g.beginPath(); g.moveTo(-GEO.BHW + 1, ry); g.lineTo(GEO.BHW - 1, ry); g.stroke();
+  }
+  g.beginPath(); g.arc(0, -s, 6.5, 0, TAU);                   // wrist pin
+  g.fillStyle = '#6b7583'; g.fill();
+  g.strokeStyle = '#39424f'; g.lineWidth = 1.5; g.stroke();
+  g.beginPath(); g.arc(0, -s, 2.8, 0, TAU);
+  g.fillStyle = '#2c333e'; g.fill();
+  g.restore();
+}
+
+/* ---- V8 (canvas 3): same camera as the V6 ----
+   Four throws, each carrying a pair at ±45°; cross-plane, fires every 90°. */
+const V8 = { CX: 300, BASE: 620, DX: 0, DY: 115, BANK: PI / 4 };
+const v8Phase = (t, i) => (((t - i * PI / 2) % (4 * PI)) + 4 * PI) % (4 * PI);
+
+function renderV8(t) {
+  g3.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g3.clearRect(0, 0, 600, 720);
+  g3.fillStyle = '#1e242e';                // block backdrop
+  g3.beginPath(); g3.roundRect(V8.CX - 180, 98, 360, 572, 18); g3.fill();
+  for (let d = 3; d >= 0; d--) {
+    const bx = V8.CX + d * V8.DX, by = V8.BASE - d * V8.DY;
+    for (const side of [0, 1]) {
+      const i = d * 2 + side;              // even i = right bank, odd = left
+      const phi = side === 0 ? V8.BANK : -V8.BANK;
+      drawCyl(g3, bx, by, phi, v8Phase(t, i), 1 - d * 0.1, d === 0 && side === 0);
+    }
+  }
+  // timing chain in the front-cover plane: crank sprocket up to both banks' cams
+  {
+    const camL = DECK + 31;
+    const rp = (x, y, a) => [V8.CX + x * Math.cos(a) - y * Math.sin(a),
+                             V8.BASE + x * Math.sin(a) + y * Math.cos(a)];
+    const pts = [[V8.CX + 15, V8.BASE + 4],
+                 rp(13, -camL, V8.BANK), rp(-11, -camL, V8.BANK),
+                 rp(11, -camL, -V8.BANK), rp(-13, -camL, -V8.BANK),
+                 [V8.CX - 15, V8.BASE + 4]];
+    chain(g3, pts, t);
+    sprocket(g3, V8.CX, V8.BASE, 13, t);
+    sprocket(g3, ...rp(13, -camL, V8.BANK), 7, t / 2);
+    sprocket(g3, ...rp(-13, -camL, -V8.BANK), 7, t / 2);
+  }
+  const w = 64, gap = 5, x0 = 300 - (w * 8 + gap * 7) / 2;
+  for (let i = 0; i < 8; i++)
+    strokeChip(g3, x0 + i * (w + gap), 24, w, 30, v8Phase(t, i), 'C' + (i + 1));
+}
+
+
+/* ---- main loop ---- */
+const speedEl = document.getElementById('speed');
+const rpmEl = document.getElementById('rpm');
+const pauseBtn = document.getElementById('pause');
+let paused = false;
+pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? 'Wznów' : 'Pauza'; };
+
+const BASE_OMEGA = 4 * PI / 6;   // one full 720-degree cycle per 6 s at speed 1
+let t = 0, last = performance.now();
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  const speed = parseFloat(speedEl.value);
+  if (!paused) t = (t + BASE_OMEGA * speed * dt) % (4 * PI);
+  rpmEl.textContent = `${Math.round(BASE_OMEGA * speed / TAU * 60)} obr/min (poglądowo)`;
+  renderV8(t);
+  if (!suspended) rafId = requestAnimationFrame(frame);
+}
+let suspended = false, rafId = requestAnimationFrame(frame);
+
+// stop the render loop entirely while the window/tab is unfocused
+function suspend() {
+  if (!suspended) { suspended = true; cancelAnimationFrame(rafId); }
+}
+function resume() {
+  if (suspended) { suspended = false; last = performance.now(); rafId = requestAnimationFrame(frame); }
+}
+window.addEventListener('blur', suspend);
+window.addEventListener('focus', resume);
+document.addEventListener('visibilitychange', () => document.hidden ? suspend() : resume());
+</script>
+</body>
+</html>
