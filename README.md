@@ -1,31 +1,67 @@
-# Silniki spalinowe — animacje czterosuwu
+# Silniki spalinowe — interaktywne wizualizacje cyklu czterosuwowego
 
-Interaktywne animacje HTML/Canvas (bez zależności) pokazujące pełny cykl czterosuwowy:
-ssanie → sprężanie → praca → wydech, z dokładną kinematyką układu korbowego
-(mechanizm korbowo-wodzikowy), rozrządem DOHC z łańcuchem oraz kolorystycznym
-rozróżnieniem gazów (mieszanka/powietrze, spalanie, spaliny).
+Zestaw animacji HTML/Canvas przeznaczony jako pomoc dydaktyczna przy tłumaczeniu
+zasady działania silnika spalinowego osobom, które nie miały z nią wcześniej
+styczności. Każda animacja prezentuje w czasie rzeczywistym wszystkie cztery suwy —
+**ssanie, sprężanie, pracę i wydech** — wraz z pełnym łańcuchem zależności
+mechanicznych: od obrotu wału korbowego, przez korbowody i tłoki, po rozrząd
+sterujący zaworami. Przebieg każdego cylindra można śledzić niezależnie dzięki
+wskaźnikom faz, a tempo animacji dostosować do tempa prezentacji.
 
-## Pliki
+## Silniki
 
-| Plik | Silnik | Widok | Zapłon |
+W poziomie — konfiguracje (liczba i układ cylindrów), w pionie — rodzaj zasilania.
+
+| | **R4** — rzędowy, 4 cylindry<br><sub>widok z boku, zapłon 1‑3‑4‑2 co 180°</sub> | **V6** — widlasty 60°, 6 cylindrów<br><sub>widok wzdłuż wału, zapłon co 120°</sub> | **V8** — widlasty 90°, 8 cylindrów<br><sub>widok wzdłuż wału, zapłon co 90°</sub> |
 |---|---|---|---|
-| `r4-benzyna.html` | R4 benzyna | z boku, kamera w poziomie | iskrowy, 1-3-4-2 co 180° |
-| `r4-diesel.html` | R4 diesel | z boku, kamera w poziomie | samoczynny, wtrysk przy TDC |
-| `v6-benzyna.html` | V6 60° benzyna | wzdłuż wału, kamera 45° w dół | iskrowy, co 120° |
-| `v6-diesel.html` | V6 60° diesel | wzdłuż wału, kamera 45° w dół | samoczynny, co 120° |
-| `v8-benzyna.html` | V8 90° benzyna | wzdłuż wału, kamera 45° w dół | iskrowy, co 90° |
-| `v8-diesel.html` | V8 90° diesel | wzdłuż wału, kamera 45° w dół | samoczynny, co 90° |
-| `four-stroke-engine.html` | R4 + V6 + V8 (benzyna) | zbiorczy, starsza wersja | — |
+| **Benzyna** <sub>wtrysk bezpośredni GDI, zapłon iskrowy</sub> | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/r4-benzyna.html) · [źródło](r4-benzyna.html) | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v6-benzyna.html) · [źródło](v6-benzyna.html) | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v8-benzyna.html) · [źródło](v8-benzyna.html) |
+| **Diesel** <sub>wtrysk bezpośredni, zapłon samoczynny</sub> | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/r4-diesel.html) · [źródło](r4-diesel.html) | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v6-diesel.html) · [źródło](v6-diesel.html) | [Podgląd](https://jkbmaj.github.io/internal-combustion-engines/v8-diesel.html) · [źródło](v8-diesel.html) |
 
-Pliki są samodzielne — wystarczy otworzyć w przeglądarce. Pasek nawigacji
-linkuje między wariantami (pliki muszą leżeć w jednym folderze).
+Linki „Podgląd" wymagają włączenia GitHub Pages dla tego repozytorium
+(*Settings → Pages → Deploy from a branch → `main`*). Do czasu włączenia Pages
+pliki można otworzyć lokalnie — są samodzielne i nie wymagają serwera ani
+zewnętrznych zależności; wystarczy dowolna współczesna przeglądarka. Każda strona
+zawiera pasek nawigacji umożliwiający przejście do pozostałych wariantów.
 
-## Cechy
+## Co pokazują animacje
 
-- dokładna kinematyka: `y = R·cosθ + √(L² − R²·sin²θ)`, pętla bezszwowa co 720°
-- fazy per cylinder (chipy C1–Cn) + wspólne sterowanie Pauza/Prędkość
-- rozrząd: wałki DOHC (½ prędkości wału), krzywki, szklanki, sprężyny zaworowe,
-  łańcuch z ogniwami sprzężonymi z obrotem wału (wszystko kręci się w prawo)
-- benzyna: świeca z iskrą przed TDC; diesel: wtryskiwacz + żarząca się świeca żarowa
-- auto-pauza renderowania przy utracie fokusu okna/karty (oszczędność CPU)
-- rendering HiDPI (devicePixelRatio)
+**Cykl pracy.** Ładunek w cylindrze zmienia barwę zgodnie z fazą: niebieskie
+powietrze podczas ssania, ciemniejący błękit sprężania, biało‑pomarańczowy błysk
+spalania i suw pracy, szare spaliny podczas wydechu. Pod sufitem każdej strony
+wskaźniki C1–Cn pokazują bieżący suw i jego postęp dla każdego cylindra z osobna,
+co pozwala wytłumaczyć przesunięcie faz między cylindrami i równomierność pracy.
+
+**Układ korbowy.** Ruch tłoka wynika z dokładnej kinematyki mechanizmu
+korbowo‑wodzikowego (`y = R·cos θ + √(L² − R²·sin² θ)`), a nie z uproszczonej
+sinusoidy — widać charakterystyczną asymetrię prędkości tłoka. Narysowane są
+korbowody z pokrywami łożysk, pierścienie tłokowe, sworznie, przeciwwagi
+i czopy wału.
+
+**Rozrząd.** Nad każdą głowicą pracują dwa wałki rozrządu (DOHC) obracające się
+z połową prędkości wału korbowego; krzywki naciskają szklanki zaworów, a sprężyny
+zaworowe wyraźnie ściskają się przy otwarciu. Łańcuch rozrządu z ruchomymi
+ogniwami łączy koło na wale korbowym z kołami wałków — na znacznikach kół widać
+przełożenie 2:1. Wszystkie elementy obracają się zgodnie, w prawo.
+
+**Zasilanie i zapłon.** W wersji benzynowej wtryskiwacz boczny podaje paliwo
+bezpośrednio do cylindra w trakcie suwu ssania, a świeca zapłonowa generuje
+widoczną iskrę tuż przed górnym martwym położeniem. W wersji wysokoprężnej
+paliwo jest wtryskiwane centralnie w okolicy GMP i zapala się samoczynnie
+od sprężonego powietrza, a świeca żarowa cyklicznie (co około 10 sekund)
+rozżarza się, ilustrując wspomaganie zimnego rozruchu.
+
+## Sterowanie
+
+Przycisk **Pauza** zatrzymuje animację w dowolnym momencie — przydatne przy
+omawianiu konkretnej fazy. Suwak **Prędkość** (0,2–3×) pozwala zwolnić przebieg
+na czas tłumaczenia lub przyspieszyć go do naturalnego tempa. Animacja zapętla
+się bezszwowo co pełny cykl 720°, a gdy okno lub karta przeglądarki traci fokus,
+renderowanie jest automatycznie wstrzymywane dla oszczędności zasobów
+i wznawiane po powrocie.
+
+## Szczegóły techniczne
+
+Pojedynczy plik HTML na wariant, czysty JavaScript i Canvas 2D bez bibliotek
+zewnętrznych. Rendering w natywnej rozdzielczości ekranu (HiDPI). Plik
+`four-stroke-engine.html` to starsza wersja zbiorcza z trzema silnikami
+benzynowymi na jednej stronie, zachowana dla porównania.
