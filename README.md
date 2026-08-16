@@ -24,6 +24,33 @@ co obrót. Silnik Wankla ma wtrysk do kanału dolotowego; jego trójkątny wirni
 obraca się trzykrotnie wolniej od wału mimośrodowego, a każda z trzech komór
 przechodzi pełny cykl czterosuwowy na jeden obrót wirnika.
 
+### Dodatkowe konfiguracje (benzyna)
+
+Warianty ilustrujące wpływ układu cylindrów na pracę silnika:
+**R6** — rzędowa szóstka, zapłon 1‑5‑3‑6‑2‑4 co 120°, wzorcowa równomierność
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/r6-benzyna.html) · [źródło](r6-benzyna.html));
+**VR6** — sześć cylindrów w wąskim V 15° we wspólnej głowicy, widok z boku
+z naprzemiennym pochyleniem ±7,5°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/vr6-benzyna.html) · [źródło](vr6-benzyna.html));
+**Boxer B4** — cylindry przeciwsobne w poziomie, zapłon co 180°
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/boxer-benzyna.html) · [źródło](boxer-benzyna.html));
+**Gwiazdowy R5** — pięć cylindrów co 72° wokół wspólnego wykorbienia,
+zapłon co 144° w kolejności 1‑3‑5‑2‑4
+([Podgląd](https://jkbmaj.github.io/internal-combustion-engines/gwiazdowy-benzyna.html) · [źródło](gwiazdowy-benzyna.html)).
+
+## Narzędzia prezentacyjne
+
+Poza pauzą i regulacją prędkości każda strona ma przycisk **+15°**, który
+zatrzymuje animację i obraca wał o 15° na kliknięcie — do omawiania przebiegu
+faz klatka po klatce; przycisk **Etykiety** włącza opisy części z odnośnikami
+(świeca lub wtryskiwacz, kanały, rozrząd, tłok, korbowód, wał); wskaźnik
+**kąta wału** i **wykres ciśnienia p(θ)** z markerem bieżącego położenia wiążą
+animację z przebiegiem termodynamicznym. Prędkość obrotowa wału delikatnie
+pulsuje w takt suwów pracy — im mniej cylindrów, tym wyraźniej, co obrazowo
+tłumaczy rolę liczby cylindrów i koła zamachowego. Diesle mają dodatkowo
+moduł turbosprężarki (turbina napędzana spalinami i sprężarka na wspólnym
+wałku).
+
 Linki „Podgląd" wymagają włączenia GitHub Pages dla tego repozytorium
 (*Settings → Pages → Deploy from a branch → `main`*). Do czasu włączenia Pages
 pliki można otworzyć lokalnie — są samodzielne i nie wymagają serwera ani

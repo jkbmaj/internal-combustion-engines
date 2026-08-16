@@ -35,13 +35,17 @@
 <div class="sub">Jeden cylinder, widok z boku · pełny cykl w 360° · sterowanie tłokiem — bez zaworów i rozrządu · przepłukiwanie przez skrzynię korbową</div>
 <div class="nav">
   <a href="r4-benzyna.html">R4 benzyna</a>
-  <a href="v6-benzyna.html">V6 · 60° benzyna</a>
-  <a href="v8-benzyna.html">V8 · 90° benzyna</a>
-  <a href="r4-diesel.html">R4 diesel</a>
-  <a href="v6-diesel.html">V6 · 60° diesel</a>
-  <a href="v8-diesel.html">V8 · 90° diesel</a>
+  <a href="v6-benzyna.html">V6 benzyna</a>
+  <a href="v8-benzyna.html">V8 benzyna</a>
+  <a href="r6-benzyna.html">R6 benzyna</a>
+  <a href="vr6-benzyna.html">VR6 benzyna</a>
+  <a href="boxer-benzyna.html">Boxer B4</a>
+  <a href="gwiazdowy-benzyna.html">Gwiazdowy R5</a>
   <a href="dwusuw-benzyna.html" class="cur">Dwusuw R1</a>
   <a href="wankel-benzyna.html">Wankel</a>
+  <a href="r4-diesel.html">R4 diesel</a>
+  <a href="v6-diesel.html">V6 diesel</a>
+  <a href="v8-diesel.html">V8 diesel</a>
 </div>
 <div class="legend">
   <span><span class="dot" style="background:#ff8a2a"></span>Praca</span>
@@ -54,6 +58,8 @@
 <canvas id="cv" width="480" height="720"></canvas>
 <div class="controls">
   <button id="pause">Pauza</button>
+  <button id="step">+15°</button>
+  <button id="labels">Etykiety</button>
   <label>Prędkość <input id="speed" type="range" min="0.2" max="3" step="0.05" value="1"></label>
   <span id="rpm"></span>
 </div>
@@ -354,12 +360,116 @@ function render(t) {
   drawPhaseBar(th);
 }
 
+const OCFG = {
+  g: g, cycle: TAU, twoStroke: true,
+  pulses: [0], amp: 0.22, powerWin: [0.15, 2.1],
+  hudY: 700, graph: [150, 642, 200, 52], graphLabel: 'p(θ)',
+  marker: t => t % OCFG.cycle,
+  turbo: null,
+  labels: [
+    [240, 332, 320, 296, 'Świeca zapłonowa'],
+    [143, 461, 30, 428, 'Gaźnik'],
+    [82, 470, 14, 404, 'Filtr powietrza'],
+    [177, 471, 54, 540, 'Zawór płytkowy'],
+    [188, 440, 40, 368, 'Kanał przelotowy'],
+    [330, 418, 336, 378, 'Wydech rezonansowy'],
+    [240, 428, 330, 428, 'Tłok'],
+    [218, 568, 64, 632, 'Skrzynia korbowa'],
+  ],
+};
+
+/* ---- educational overlay: HUD, part labels, pressure graph, torque pulses ---- */
+function torqueMul(t) {
+  let m = 1;
+  for (const o of OCFG.pulses) {
+    const ph = ((t - o) % OCFG.cycle + OCFG.cycle) % OCFG.cycle;
+    if (ph >= OCFG.powerWin[0] && ph < OCFG.powerWin[1])
+      m += OCFG.amp * Math.sin((ph - OCFG.powerWin[0]) / (OCFG.powerWin[1] - OCFG.powerWin[0]) * PI);
+  }
+  return m;
+}
+function pCurve(th) {
+  if (!OCFG.twoStroke) {
+    if (th < PI) return 0.05;
+    if (th < 2 * PI) { const f = (th - PI) / PI; return 0.05 + 0.30 * Math.pow(f, 2.2); }
+    if (th < 3 * PI) { const f = (th - 2 * PI) / PI; return 0.08 + 0.92 * Math.exp(-2.6 * f); }
+    return 0.09;
+  }
+  if (th < 2.1) return 0.08 + 0.92 * Math.exp(-1.8 * th / 2.1);
+  if (th < PI + 0.8) return 0.12;
+  if (th < 4.0) return 0.10;
+  return 0.10 + 0.25 * Math.pow((th - 4.0) / (TAU - 4.0), 2.2);
+}
+function drawTurbo(g2, x, y, t) {
+  const spin = t * 6;
+  g2.font = '600 10px system-ui'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+  for (const [dx2, col, lab] of [[-26, '#a08055', 'TURBINA'], [26, '#5a86ad', 'SPRĘŻARKA']]) {
+    g2.beginPath(); g2.arc(x + dx2, y, 20, 0, TAU);
+    g2.fillStyle = '#242b36'; g2.fill();
+    g2.strokeStyle = col; g2.lineWidth = 2.5; g2.stroke();
+    g2.strokeStyle = col; g2.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      const a = spin + k * PI / 3;
+      g2.beginPath(); g2.moveTo(x + dx2, y);
+      g2.lineTo(x + dx2 + Math.cos(a) * 15, y + Math.sin(a) * 15);
+      g2.stroke();
+    }
+    g2.fillStyle = '#7b8494'; g2.fillText(lab, x + dx2, y + 33);
+  }
+  g2.fillStyle = '#5b6675'; g2.fillRect(x - 7, y - 3, 14, 6);
+  g2.strokeStyle = '#9aa3ad'; g2.lineWidth = 4;
+  g2.beginPath(); g2.moveTo(x - 26, y - 36); g2.lineTo(x - 26, y - 21); g2.stroke();
+  g2.strokeStyle = '#4fa0ff';
+  g2.beginPath(); g2.moveTo(x + 26, y - 36); g2.lineTo(x + 26, y - 21); g2.stroke();
+  g2.textAlign = 'left';
+}
+window.showLabels = false;
+function overlay(t) {
+  const g2 = OCFG.g, ph = OCFG.marker(t);
+  g2.font = '600 12px system-ui'; g2.textAlign = 'left'; g2.textBaseline = 'middle';
+  g2.fillStyle = '#7b8494';
+  g2.fillText('kąt wału: ' + Math.round((t % OCFG.cycle) * 180 / PI) + '° / '
+              + Math.round(OCFG.cycle * 180 / PI) + '°', 12, OCFG.hudY);
+  const [gx, gy, gw, gh] = OCFG.graph;
+  g2.strokeStyle = '#333c4a'; g2.lineWidth = 1; g2.strokeRect(gx, gy, gw, gh);
+  g2.beginPath();
+  for (let i = 0; i <= 120; i++) {
+    const x = gx + gw * i / 120, y = gy + gh - 4 - (gh - 10) * pCurve(OCFG.cycle * i / 120);
+    i ? g2.lineTo(x, y) : g2.moveTo(x, y);
+  }
+  g2.strokeStyle = '#e8863a'; g2.lineWidth = 1.5; g2.stroke();
+  g2.beginPath();
+  g2.arc(gx + gw * (ph / OCFG.cycle), gy + gh - 4 - (gh - 10) * pCurve(ph), 3, 0, TAU);
+  g2.fillStyle = '#ffe98a'; g2.fill();
+  g2.fillStyle = '#7b8494'; g2.font = '11px system-ui';
+  g2.fillText(OCFG.graphLabel, gx + 4, gy - 8);
+  if (window.showLabels) {
+    g2.font = '11px system-ui';
+    for (const [ax, ay, tx, ty, txt] of OCFG.labels) {
+      g2.strokeStyle = 'rgba(215,221,230,0.45)'; g2.lineWidth = 1;
+      g2.beginPath(); g2.moveTo(ax, ay); g2.lineTo(tx, ty); g2.stroke();
+      const tw = g2.measureText(txt).width;
+      g2.fillStyle = 'rgba(16,19,24,0.75)';
+      g2.fillRect(tx + 1, ty - 8, tw + 6, 16);
+      g2.fillStyle = '#d7dde6'; g2.fillText(txt, tx + 4, ty);
+      g2.beginPath(); g2.arc(ax, ay, 2, 0, TAU);
+      g2.fillStyle = '#d7dde6'; g2.fill();
+    }
+  }
+  if (OCFG.turbo) drawTurbo(g2, OCFG.turbo[0], OCFG.turbo[1], t);
+}
+
 /* ---- main loop ---- */
 const speedEl = document.getElementById('speed');
 const rpmEl = document.getElementById('rpm');
 const pauseBtn = document.getElementById('pause');
 let paused = false;
 pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? 'Wznów' : 'Pauza'; };
+document.getElementById('step').onclick = () => {
+  paused = true; pauseBtn.textContent = 'Wznów';
+  t = (t + PI / 12) % OCFG.cycle;
+};
+document.getElementById('labels').onclick = () => { window.showLabels = !window.showLabels; };
 
 const BASE_OMEGA = 4 * PI / 6;
 let t = 0, last = performance.now();
@@ -368,9 +478,10 @@ function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
   const speed = parseFloat(speedEl.value);
-  if (!paused) t = (t + BASE_OMEGA * speed * dt) % TAU;
+  if (!paused) t = (t + BASE_OMEGA * torqueMul(t) * speed * dt) % TAU;
   rpmEl.textContent = `${Math.round(BASE_OMEGA * speed / TAU * 60)} obr/min (poglądowo)`;
   render(t);
+  overlay(t);
   if (!suspended) rafId = requestAnimationFrame(frame);
 }
 let suspended = false, rafId = requestAnimationFrame(frame);
