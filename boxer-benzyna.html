@@ -434,7 +434,10 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
    Same camera: each crank throw carries a pair of cylinders at ±30°; throws
    stack up the screen. Even i = right bank, odd = left; fires every 120°. */
 const V6 = { CX: 360, BASE: 560, DX: 0, DY: 115, BANK: PI / 2 };
-const v6Phase = (t, i) => (((t - i * PI) % (4 * PI)) + 4 * PI) % (4 * PI);
+// true boxer: opposed pistons mirror each other (move out/in together);
+// firing still every 180°, order C2-C4-C1-C3
+const BX_OFF = [0, 2 * PI, PI, 3 * PI];
+const v6Phase = (t, i) => (((t - BX_OFF[i]) % (4 * PI)) + 4 * PI) % (4 * PI);
 
 function renderV6(t) {
   g2.setTransform(DPR, 0, 0, DPR, 0, 0);

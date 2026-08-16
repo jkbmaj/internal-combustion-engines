@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Silnik benzynowy VR6 — animacja czterosuwu</title>
+<title>Silnik benzynowy VR6 · 60° — animacja czterosuwu</title>
 <style>
   :root { --bg:#101318; --panel:#1a1f27; --text:#d7dde6; --dim:#7b8494; }
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -41,7 +41,7 @@
 </head>
 <body>
 <h1>Silnik benzynowy — VR6 (wąskie V 15°)</h1>
-<div class="sub">Widok z boku, kamera w poziomie · cylindry naprzemiennie ±7,5° w jednej głowicy · zapłon 1-5-3-6-2-4 co 120° · iskra ze świecy zapłonowej</div>
+<div class="sub">Widok wzdłuż wału, kamera 45° w dół · 6 cylindrów naprzemiennie ±7,5° w jednej głowicy, każdy na własnym wykorbieniu · zapłon 1-5-3-6-2-4 co 120°</div>
 <div class="nav">
   <a href="r4-benzyna.html">R4 benzyna</a>
   <a href="v6-benzyna.html">V6 benzyna</a>
@@ -65,7 +65,7 @@
   <span><span class="dot" style="background:#ffb347"></span>Wtrysk paliwa (GDI)</span>
   <span><span class="dot" style="background:#ffe98a"></span>Iskra</span>
 </div>
-<canvas id="c1" width="520" height="720"></canvas>
+<canvas id="c2" width="560" height="760"></canvas>
 <div class="controls">
   <button id="pause">Pauza</button>
   <button id="step">+15°</button>
@@ -77,9 +77,9 @@
 <script>
 'use strict';
 const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
-const c1 = document.getElementById('c1'), g1 = c1.getContext('2d');
-c1.style.width = '700px'; c1.style.height = '720px';
-c1.width = Math.round(700 * DPR); c1.height = Math.round(720 * DPR);
+const c2 = document.getElementById('c2'), g2 = c2.getContext('2d');
+c2.style.width = '560px'; c2.style.height = '760px';
+c2.width = Math.round(560 * DPR); c2.height = Math.round(760 * DPR);
 
 const TAU = Math.PI * 2, PI = Math.PI;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -138,7 +138,7 @@ function strokeChip(g, x, y, w, h, ph, label) {
 }
 
 /* ---- shared cylinder geometry ---- */
-const GEO = { R: 32, L: 104, BHW: 24, WALL: 8, PH: 28, CO: 15 };
+const GEO = { R: 26, L: 78, BHW: 19, WALL: 7, PH: 24, CO: 13 };
 const DECK = GEO.R + GEO.L + 22;          // crank center -> deck, along bore axis
 const LINER = 2 * GEO.R + GEO.PH + 22;    // liner length below deck
 
@@ -430,65 +430,55 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
   g.restore();
 }
 
-/* ---- inline-4 (canvas 1): side view, camera level ----
-   All four bores side by side; the crankshaft runs across the frame and each
-   throw rotates in the screen plane. Firing order 1-3-4-2, 180° apart. */
-const I4 = { X0: 85, PITCH: 90, BASE: 520 };
-const I4_OFF = [0, 8 * PI / 3, 4 * PI / 3, 10 * PI / 3, 2 * PI / 3, 2 * PI]; // 1-5-3-6-2-4 co 120°
-const i4Phase = (t, i) => (((t - I4_OFF[i]) % (4 * PI)) + 4 * PI) % (4 * PI);
+/* ---- V6 (canvas 2) ----
+   Same camera: each crank throw carries a pair of cylinders at ±30°; throws
+   stack up the screen. Even i = right bank, odd = left; fires every 120°. */
+const V6 = { CX: 280, BASE: 690, DX: 0, DY: 92, BANK: PI / 24 };
+const VR_OFF = [0, 8 * PI / 3, 4 * PI / 3, 10 * PI / 3, 2 * PI / 3, 2 * PI]; // 1-5-3-6-2-4
+const v6Phase = (t, i) => (((t - VR_OFF[i]) % (4 * PI)) + 4 * PI) % (4 * PI);
 
-function renderI4(t) {
-  g1.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g1.clearRect(0, 0, 700, 720);
-  g1.fillStyle = '#1e242e';                // engine block silhouette + crankcase
-  g1.beginPath(); g1.roundRect(36, 318, 632, 250, 16); g1.fill();
-  g1.beginPath(); g1.roundRect(58, 470, 584, 118, 14); g1.fill();
-  g1.fillStyle = '#1a1f28';                // oil sump
-  g1.beginPath(); g1.roundRect(140, 580, 400, 26, [0, 0, 12, 12]); g1.fill();
-  const fwx = I4.X0 + 5 * I4.PITCH + 62;
-  g1.beginPath(); g1.arc(fwx, I4.BASE, 26, 0, TAU);   // flywheel
-  g1.fillStyle = '#39424f'; g1.fill();
-  g1.strokeStyle = '#2c333e'; g1.lineWidth = 2; g1.stroke();
-  g1.fillStyle = '#2c333e';                // flywheel bolts rotate with the crank
-  for (let k = 0; k < 4; k++) {
-    const a = t + k * PI / 2;
-    g1.beginPath(); g1.arc(fwx + Math.cos(a) * 15, I4.BASE + Math.sin(a) * 15, 3, 0, TAU); g1.fill();
+function renderV6(t) {
+  g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g2.clearRect(0, 0, 560, 760);
+  g2.fillStyle = '#1e242e';                // block backdrop
+  g2.beginPath(); g2.roundRect(V6.CX - 112, 60, 224, 672, 18); g2.fill();
+  for (let i = 5; i >= 0; i--) {         // one throw per cylinder, tight zigzag
+    const phi = i % 2 ? -V6.BANK : V6.BANK;
+    drawCyl(g2, V6.CX, V6.BASE - i * V6.DY, phi, v6Phase(t, i), 1 - i * 0.06, i === 0);
   }
-  const shaft = g1.createLinearGradient(0, I4.BASE - 5, 0, I4.BASE + 5);
-  shaft.addColorStop(0, '#5b6675'); shaft.addColorStop(0.5, '#49525f'); shaft.addColorStop(1, '#333b47');
-  g1.strokeStyle = shaft; g1.lineWidth = 10; g1.lineCap = 'round';
-  g1.beginPath();                          // crankshaft across the frame
-  g1.moveTo(I4.X0 - 45, I4.BASE); g1.lineTo(fwx, I4.BASE);
-  g1.stroke();
-  g1.fillStyle = '#2c333e';                // main-bearing pedestals
-  for (const mx of [I4.X0 - 50, I4.X0 + 45, I4.X0 + 135, I4.X0 + 225, I4.X0 + 315, I4.X0 + 405, I4.X0 + 495])
-    { g1.beginPath(); g1.roundRect(mx - 7, I4.BASE - 13, 14, 26, 3); g1.fill(); }
-  // camshaft along the head line + timing chain at the free end (2:1 on sprockets)
-  const camY = I4.BASE - DECK - 31;
-  g1.strokeStyle = '#333b47'; g1.lineWidth = 5; g1.lineCap = 'round';
-  g1.beginPath(); g1.moveTo(I4.X0 - 55, camY); g1.lineTo(I4.X0 + 5 * I4.PITCH + 20, camY); g1.stroke();
-  chain(g1, [[I4.X0 - 63, camY], [I4.X0 - 63, I4.BASE], [I4.X0 - 47, I4.BASE], [I4.X0 - 47, camY]], t);
-  sprocket(g1, I4.X0 - 55, camY, 9, t / 2);
-  sprocket(g1, I4.X0 - 55, I4.BASE, 13, t);
-  for (let i = 0; i < 6; i++)              // full crank throw visible on each
-    drawCyl(g1, I4.X0 + i * I4.PITCH, I4.BASE, i % 2 ? -0.131 : 0.131, i4Phase(t, i), 1, true);
-  const w = 80, gap = 8, x0 = 350 - (w * 6 + gap * 5) / 2;
+  // timing chain in the front-cover plane: crank sprocket up to both banks' cams
+  {
+    const camL = DECK + 31;
+    const rp = (x, y, a) => [V6.CX + x * Math.cos(a) - y * Math.sin(a),
+                             V6.BASE + x * Math.sin(a) + y * Math.cos(a)];
+    const pts = [[V6.CX + 15, V6.BASE + 4],
+                 rp(13, -camL, V6.BANK), rp(-11, -camL, V6.BANK),
+                 rp(11, -camL, -V6.BANK), rp(-13, -camL, -V6.BANK),
+                 [V6.CX - 15, V6.BASE + 4]];
+    chain(g2, pts, t);
+    sprocket(g2, V6.CX, V6.BASE, 13, t);
+    sprocket(g2, ...rp(13, -camL, V6.BANK), 7, t / 2);
+    sprocket(g2, ...rp(-13, -camL, -V6.BANK), 7, t / 2);
+  }
+  const w = 80, gap = 6, x0 = 280 - (w * 6 + gap * 5) / 2;
   for (let i = 0; i < 6; i++)
-    strokeChip(g1, x0 + i * (w + gap), 24, w, 30, i4Phase(t, i), 'C' + (i + 1));
+    strokeChip(g2, x0 + i * (w + gap), 24, w, 30, v6Phase(t, i), 'C' + (i + 1));
 }
 
 
 const OCFG = {
-  g: g1, cycle: 4 * PI, twoStroke: false,
-  pulses: [0, 8 * PI / 3, 4 * PI / 3, 10 * PI / 3, 2 * PI / 3, 2 * PI], amp: 0.06, powerWin: [2 * PI, 3 * PI],
-  hudY: 700, graph: [250, 642, 200, 52], graphLabel: 'p(θ) — cylinder 1',
+  g: g2, cycle: 4 * PI, twoStroke: false,
+  pulses: [0, 8 * PI / 3, 4 * PI / 3, 10 * PI / 3, 2 * PI / 3, 2 * PI], amp: 0.06,
+  powerWin: [2 * PI, 3 * PI],
+  hudY: 70, graph: [180, 705, 200, 44], graphLabel: 'p(θ) — cylinder 1',
   marker: t => t % OCFG.cycle,
   turbo: null,
   labels: [
-    [109, 338, 200, 284, 'Świeca zapłonowa'],
-    [64, 330, 8, 300, 'Kanał dolotowy'],
-    [155, 342, 200, 316, 'Kanał wydechowy'],
-    [85, 520, 200, 556, 'Wał korbowy'],
+    [300, 539, 380, 506, 'Świeca zapłonowa'],
+    [255, 531, 100, 500, 'Kanał dolotowy'],
+    [346, 543, 396, 548, 'Kanał wydechowy'],
+    [280, 600, 100, 640, 'Łańcuch rozrządu'],
+    [280, 690, 390, 692, 'Wał korbowy'],
   ],
 };
 
@@ -594,7 +584,7 @@ function frame(now) {
   const speed = parseFloat(speedEl.value);
   if (!paused) t = (t + BASE_OMEGA * torqueMul(t) * speed * dt) % (4 * PI);
   rpmEl.textContent = `${Math.round(BASE_OMEGA * speed / TAU * 60)} obr/min (poglądowo)`;
-  renderI4(t);
+  renderV6(t);
   overlay(t);
   if (!suspended) rafId = requestAnimationFrame(frame);
 }
