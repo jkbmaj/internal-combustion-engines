@@ -156,7 +156,9 @@ const IN_PIPE = [[86, 471], [150, 471], [203, 471]];
 const IN_FLOW = [[86, 471], [150, 471], [203, 471], [228, 495]];
 const TR_PIPE = [[196, 478], [180, 468], [176, 438], [190, 428], [208, 426]];
 const TR_FLOW = [[216, 500], [182, 466], [178, 438], [194, 427], [226, 432]];
-const EX_PIPE = [[272, 420], [340, 414], [430, 424]];
+// tuned expansion chamber: header, diverging cone, belly, converging cone, stinger
+const EX_CH = { x: [272, 300, 360, 410, 445, 468], hw: [8, 8, 22, 22, 5, 5], y: [420, 419, 421, 424, 426, 427] };
+const EX_FLOW = EX_CH.x.map((x, i) => [x, EX_CH.y[i]]);
 
 function render(t) {
   const th = t % TAU;
@@ -176,8 +178,21 @@ function render(t) {
   // sealed crankcase with mixture (compressed as the piston descends)
   g.beginPath(); g.arc(CX, CRANK_Y, 61, 0, TAU);
   g.strokeStyle = '#3c4552'; g.lineWidth = 10; g.stroke();
+  g.fillStyle = '#2c333e';                       // case bolts
+  for (let k = 0; k < 8; k++) {
+    const a = PI / 8 + k * PI / 4;
+    g.beginPath(); g.arc(CX + Math.cos(a) * 61, CRANK_Y + Math.sin(a) * 61, 2.4, 0, TAU); g.fill();
+  }
   g.beginPath(); g.arc(CX, CRANK_Y, 56, 0, TAU);
   g.fillStyle = '#141920'; g.fill();
+  g.beginPath(); g.arc(CX, CRANK_Y, 48, 0, TAU); // flywheel behind the crank web
+  g.fillStyle = '#1b2129'; g.fill();
+  g.strokeStyle = '#333b47'; g.lineWidth = 3; g.stroke();
+  g.fillStyle = '#2c333e';
+  for (let k = 0; k < 4; k++) {
+    const a = th + PI / 4 + k * PI / 2;
+    g.beginPath(); g.arc(CX + Math.cos(a) * 38, CRANK_Y + Math.sin(a) * 38, 3.2, 0, TAU); g.fill();
+  }
   const s = CRANK_Y - py;
   const caseComp = clamp01((160 - s) / 80);
   const mixCol = `rgba(80,155,255,${(0.10 + 0.24 * caseComp).toFixed(3)})`;
@@ -187,12 +202,31 @@ function render(t) {
   // ducts (behind walls): intake with carburettor, transfer riser, exhaust
   pipe(IN_PIPE, 12);
   pipe(TR_PIPE, 10);
-  pipe(EX_PIPE, 14);
+  // tuned expansion chamber on the exhaust
+  g.beginPath();
+  EX_CH.x.forEach((x, i) => { const y = EX_CH.y[i] - EX_CH.hw[i]; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+  for (let i = EX_CH.x.length - 1; i >= 0; i--) g.lineTo(EX_CH.x[i], EX_CH.y[i] + EX_CH.hw[i]);
+  g.closePath();
+  g.fillStyle = '#161b23'; g.fill();
+  g.strokeStyle = '#39424f'; g.lineWidth = 2.5; g.stroke();
   g.fillStyle = '#39424f';                       // carburettor body on intake
   g.beginPath(); g.roundRect(128, 452, 30, 18, 3); g.fill();
   g.strokeStyle = '#2c333e'; g.lineWidth = 1.5;
   g.beginPath(); g.roundRect(128, 452, 30, 18, 3); g.stroke();
   g.fillStyle = '#9aa5b3'; g.fillRect(140, 444, 6, 10);  // fuel inlet jet
+  g.fillStyle = '#8a94a3';                       // float bowl
+  g.beginPath(); g.roundRect(132, 471, 22, 9, 2); g.fill();
+  g.fillStyle = '#39424f';                       // air filter at the inlet
+  g.beginPath(); g.roundRect(74, 458, 16, 26, 3); g.fill();
+  g.fillStyle = '#20262f';
+  for (let y = 462; y < 480; y += 5) g.fillRect(77, y, 10, 2);
+  g.fillStyle = '#39424f';                       // reed-valve block before the case
+  g.beginPath(); g.roundRect(166, 461, 22, 20, 2); g.fill();
+  g.strokeStyle = '#b8c0cc'; g.lineWidth = 2.5; g.lineCap = 'round';
+  const flap = 0.85 - 0.65 * inO;                // reed petal opens with intake flow
+  g.beginPath(); g.moveTo(170, 464);
+  g.lineTo(170 + Math.cos(flap) * 15, 464 + Math.sin(flap) * 15);
+  g.stroke();
 
   // head with fins + walls (gaps = ports)
   g.fillStyle = '#3c4552';
@@ -200,6 +234,8 @@ function render(t) {
   g.fillStyle = '#333b47';
   for (let y = 318; y < 334; y += 6) g.fillRect(OWL - 10, y, (BHW + WALL) * 2 + 20, 3);
   g.fillStyle = '#232a34'; g.fillRect(OWL, 354, (BHW + WALL) * 2, 2);   // gasket
+  g.beginPath(); g.ellipse(CX, DECK, 24, 9, 0, PI, TAU);   // domed combustion chamber
+  g.fillStyle = '#10141a'; g.fill();
   const wallSegs = [
     [OWL, 356, 416], [OWL, 436, 462], [OWL, 480, LINER_BOT],            // left: transfer + intake ports
     [OWR, 356, 408], [OWR, 432, LINER_BOT],                             // right: exhaust port
@@ -216,6 +252,8 @@ function render(t) {
   g.fillStyle = bg; g.fillRect(CX - BHW, DECK, BHW * 2, LINER_BOT - DECK);
   g.fillStyle = gas2T(th);
   g.fillRect(CX - BHW, DECK, BHW * 2, crown - DECK);
+  g.beginPath(); g.ellipse(CX, DECK, 24, 9, 0, PI, TAU);   // charge fills the dome too
+  g.fill();
   if (th < 0.35) {                               // combustion glow
     const gl = g.createRadialGradient(CX, DECK + 12, 2, CX, DECK + 12, 60);
     gl.addColorStop(0, `rgba(255,235,150,${(0.8 * (1 - th / 0.35)).toFixed(3)})`);
@@ -311,7 +349,7 @@ function render(t) {
   if (trO > 0.1)
     dots(TR_FLOW, prog, () => '#8ec4ff', () => 2.5);
   if (exO > 0.1)
-    dots(EX_PIPE, prog, () => '#c2c8cf', () => 2.5);
+    dots(EX_FLOW, prog, () => '#c2c8cf', () => 2.5);
 
   drawPhaseBar(th);
 }

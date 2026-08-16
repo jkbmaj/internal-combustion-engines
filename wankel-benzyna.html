@@ -183,14 +183,6 @@ function render(t) {
 
   pipe(IN_PIPE, 13);                     // ports outside the housing
   pipe(EX_PIPE, 13);
-  // port-injection injector on the intake runner
-  g.save();
-  g.translate(196, 250); g.rotate(0.65);
-  g.fillStyle = '#9aa5b3'; g.fillRect(-3, -20, 6, 16);
-  g.fillStyle = '#7f8a99'; g.fillRect(-5, -23, 10, 5);
-  g.beginPath(); g.moveTo(-2, -4); g.lineTo(2, -4); g.lineTo(0, 2); g.closePath();
-  g.fillStyle = '#cfd6df'; g.fill();
-  g.restore();
 
   housingPath();                         // interior
   g.fillStyle = '#10141a'; g.fill();
@@ -302,6 +294,29 @@ function render(t) {
     dots(IN_PIPE, prog, k => k % 3 === 2 ? '#ffb347' : '#8ec4ff', k => k % 3 === 2 ? 2 : 2.5);
   if (phases.some(p => p > 3.1 * PI && p < 3.9 * PI))
     dots(EX_PIPE, prog, () => '#c2c8cf', () => 2.5);
+
+  // port injector seated on the intake runner, nozzle in the duct,
+  // spraying towards the port while a chamber is on intake
+  {
+    const act = phases.some(p => p > 0.15 * PI && p < 0.9 * PI);
+    g.save();
+    g.translate(214, 298); g.rotate(0.985);      // perpendicular to the runner
+    g.fillStyle = '#9aa5b3'; g.fillRect(-3, -24, 6, 18);   // body
+    g.fillStyle = '#7f8a99'; g.fillRect(-5, -27, 10, 5);   // clamp + fuel fitting
+    g.beginPath(); g.moveTo(-2.5, -6); g.lineTo(2.5, -6); g.lineTo(0, 0); g.closePath();
+    g.fillStyle = '#cfd6df'; g.fill();                     // nozzle
+    if (act) {
+      g.strokeStyle = '#ffb347'; g.lineWidth = 1.4; g.globalAlpha = 0.9;
+      for (let k = 0; k < 3; k++) {
+        const a2 = (k - 1) * 0.3;
+        g.beginPath(); g.moveTo(0, 0);
+        g.lineTo(Math.sin(a2) * 10, 2 + Math.cos(a2) * 11);
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+    }
+    g.restore();
+  }
 
   // per-chamber phase chips
   const w = 120, gap = 10, x0 = (560 - (w * 3 + gap * 2)) / 2;
