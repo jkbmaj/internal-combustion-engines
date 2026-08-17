@@ -69,7 +69,7 @@
   <span><span class="dot" style="background:#ffb347"></span>Wtrysk paliwa (GDI)</span>
   <span><span class="dot" style="background:#ffe98a"></span>Iskra</span>
 </div>
-<canvas id="c2" width="600" height="960"></canvas>
+<canvas id="c2" width="600" height="1180"></canvas>
 <div class="controls">
   <button id="pause">Pauza</button>
   <button id="step">+15°</button>
@@ -82,8 +82,8 @@
 'use strict';
 const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
 const c2 = document.getElementById('c2'), g2 = c2.getContext('2d');
-c2.style.width = '600px'; c2.style.height = '960px';
-c2.width = Math.round(600 * DPR); c2.height = Math.round(960 * DPR);
+c2.style.width = '600px'; c2.style.height = '1180px';
+c2.width = Math.round(600 * DPR); c2.height = Math.round(1180 * DPR);
 
 const TAU = Math.PI * 2, PI = Math.PI;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -437,14 +437,14 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
 /* ---- V6 (canvas 2) ----
    Same camera: each crank throw carries a pair of cylinders at ±30°; throws
    stack up the screen. Even i = right bank, odd = left; fires every 120°. */
-const V6 = { CX: 300, BASE: 880, DX: 0, DY: 90, BANK: PI / 8 };
+const V6 = { CX: 300, BASE: 1110, DX: 0, DY: 120, BANK: PI / 8 };
 const v6Phase = (t, i) => (((t - i * PI / 4) % (4 * PI)) + 4 * PI) % (4 * PI);
 
 function renderV6(t) {
   g2.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g2.clearRect(0, 0, 600, 960);
+  g2.clearRect(0, 0, 600, 1180);
   g2.fillStyle = '#1e242e';                // block backdrop
-  g2.beginPath(); g2.roundRect(V6.CX - 125, 90, 250, 845, 18); g2.fill();
+  g2.beginPath(); g2.roundRect(V6.CX - 125, 90, 250, 1072, 18); g2.fill();
   for (let d = 7; d >= 0; d--) {
     const bx = V6.CX + d * V6.DX, by = V6.BASE - d * V6.DY;
     for (const side of [0, 1]) {
@@ -477,14 +477,14 @@ const OCFG = {
   g: g2, cycle: 4 * PI, twoStroke: false,
   pulses: [...Array(16)].map((_, i) => i * PI / 4), amp: 0.035,
   powerWin: [2 * PI, 3 * PI],
-  hudY: 100, graph: [200, 906, 200, 44], graphLabel: 'p(θ) — cylinder 1',
+  hudY: 100, graph: [40, 1122, 200, 44], graphLabel: 'p(θ) — cylinder 1',
   marker: t => t % OCFG.cycle,
   turbo: null,
   labels: [
-    [352, 754, 420, 724, 'Świeca zapłonowa'],
-    [310, 735, 140, 706, 'Kanał dolotowy'],
-    [395, 770, 440, 772, 'Kanał wydechowy'],
-    [300, 880, 420, 852, 'Wał korbowy'],
+    [352, 984, 420, 954, 'Świeca zapłonowa'],
+    [310, 965, 140, 936, 'Kanał dolotowy'],
+    [395, 1000, 440, 1002, 'Kanał wydechowy'],
+    [300, 1110, 420, 1082, 'Wał korbowy'],
   ],
 };
 

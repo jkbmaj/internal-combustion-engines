@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Silniki spalinowe — wizualizacje</title>
+<style>
+  :root { --bg:#101318; --panel:#1a1f27; --text:#d7dde6; --dim:#7b8494; --acc:#e8863a; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:system-ui, -apple-system, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:20px 16px;
+  }
+  h1 { font-size:20px; font-weight:600; letter-spacing:.5px; margin-bottom:4px; }
+  .sub { font-size:13px; color:var(--dim); margin-bottom:18px; text-align:center; }
+  .groups { display:flex; flex-direction:column; gap:10px; width:100%; max-width:980px; margin-bottom:16px; }
+  .group { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .group h2 { font-size:12px; color:var(--dim); font-weight:600; letter-spacing:1px; width:130px; flex:none; }
+  .group button {
+    background:var(--panel); color:var(--text); border:1px solid #333c4a;
+    border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer;
+  }
+  .group button:hover { background:#242b36; }
+  .group button.cur { border-color:var(--acc); color:#fff; }
+  iframe {
+    width:100%; max-width:1200px; height:900px; border:1px solid #262e3a;
+    border-radius:14px; background:var(--panel);
+  }
+  .hint { font-size:12px; color:var(--dim); margin-top:10px; }
+</style>
+</head>
+<body>
+<h1>Silniki spalinowe — interaktywne wizualizacje</h1>
+<div class="sub">Wybierz konstrukcję — animacja pokazuje pełny cykl pracy, rozrząd, zasilanie i zapłon.<br>
+Ładowany jest tylko jeden silnik naraz.</div>
+<div class="groups" id="menu"></div>
+<iframe id="view" title="Podgląd silnika"></iframe>
+<div class="hint">Wewnątrz każdej animacji: Pauza · krok +15° · Etykiety części · regulacja prędkości · wykres ciśnienia p(θ)</div>
+
+<script>
+'use strict';
+const GROUPS = [
+  ['RZĘDOWE', [
+    ['r4-benzyna.html', 'R4 benzyna'],
+    ['r4-diesel.html', 'R4 diesel'],
+    ['r6-benzyna.html', 'R6'],
+    ['vr6-benzyna.html', 'VR6 15°'],
+  ]],
+  ['WIDLASTE', [
+    ['v6-benzyna.html', 'V6 60°'],
+    ['v6-diesel.html', 'V6 diesel'],
+    ['v8-benzyna.html', 'V8 90°'],
+    ['v8-diesel.html', 'V8 diesel'],
+    ['v10-benzyna.html', 'V10 72°'],
+    ['v12-benzyna.html', 'V12 60°'],
+    ['v16-benzyna.html', 'V16 45°'],
+    ['w16-benzyna.html', 'W16'],
+  ]],
+  ['INNE UKŁADY', [
+    ['boxer-benzyna.html', 'Boxer B4'],
+    ['gwiazdowy-benzyna.html', 'Gwiazdowy R5'],
+    ['dwusuw-benzyna.html', 'Dwusuw R1'],
+    ['wankel-benzyna.html', 'Wankel'],
+  ]],
+];
+const menu = document.getElementById('menu');
+const view = document.getElementById('view');
+const buttons = [];
+for (const [name, items] of GROUPS) {
+  const row = document.createElement('div');
+  row.className = 'group';
+  const h = document.createElement('h2');
+  h.textContent = name;
+  row.appendChild(h);
+  for (const [file, label] of items) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = () => {
+      view.src = file;
+      buttons.forEach(x => x.classList.remove('cur'));
+      b.classList.add('cur');
+      history.replaceState(null, '', '#' + file.replace('.html', ''));
+    };
+    b.dataset.file = file;
+    buttons.push(b);
+    row.appendChild(b);
+  }
+  menu.appendChild(row);
+}
+const wanted = location.hash.slice(1) + '.html';
+const start = buttons.find(b => b.dataset.file === wanted) || buttons[0];
+start.click();
+</script>
+</body>
+</html>
