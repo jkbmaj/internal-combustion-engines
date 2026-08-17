@@ -194,7 +194,7 @@ function sprocket(g, x, y, r, ang) {
 }
 
 // one cylinder slice seen along the crank axis; bore axis tilted phi from vertical
-function drawCyl(g, bx, by, phi, ph, shade, front) {
+function drawCyl(g, bx, by, phi, ph, shade, front, mir) {
   g.save();
   if (shade < 1) g.filter = `brightness(${shade})`;
   g.translate(bx, by);
@@ -261,6 +261,7 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     g.fillStyle = gl;
     g.fillRect(-GEO.BHW, top, GEO.BHW * 2, crown - top);
   }
+  if (mir) { g.save(); g.scale(-1, 1); }       // left bank: intake towards the valley
   // --- head detail: ports, valves, spark plug, mixture flow ---
   const inLift = ph < PI ? 8 * Math.sin(ph) : 0;                 // intake valve
   const exLift = ph >= 3 * PI ? 8 * Math.sin(ph - 3 * PI) : 0;   // exhaust valve
@@ -374,6 +375,8 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     }
     g.globalAlpha = 1;
   }
+
+  if (mir) g.restore();
 
   // tapered connecting rod with big-end cap, then piston over it
   const jx = GEO.R * Math.sin(ph), jy = -GEO.R * Math.cos(ph);

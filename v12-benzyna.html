@@ -194,7 +194,7 @@ function sprocket(g, x, y, r, ang) {
 }
 
 // one cylinder slice seen along the crank axis; bore axis tilted phi from vertical
-function drawCyl(g, bx, by, phi, ph, shade, front) {
+function drawCyl(g, bx, by, phi, ph, shade, front, mir) {
   g.save();
   if (shade < 1) g.filter = `brightness(${shade})`;
   g.translate(bx, by);
@@ -261,6 +261,7 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     g.fillStyle = gl;
     g.fillRect(-GEO.BHW, top, GEO.BHW * 2, crown - top);
   }
+  if (mir) { g.save(); g.scale(-1, 1); }       // left bank: intake towards the valley
   // --- head detail: ports, valves, spark plug, mixture flow ---
   const inLift = ph < PI ? 8 * Math.sin(ph) : 0;                 // intake valve
   const exLift = ph >= 3 * PI ? 8 * Math.sin(ph - 3 * PI) : 0;   // exhaust valve
@@ -388,6 +389,8 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
     g.globalAlpha = 1;
   }
 
+  if (mir) g.restore();
+
   // tapered connecting rod with big-end cap, then piston over it
   const jx = GEO.R * Math.sin(ph), jy = -GEO.R * Math.cos(ph);
   {
@@ -450,7 +453,7 @@ function renderV6(t) {
     for (const side of [0, 1]) {
       const i = d * 2 + side;
       const phi = side === 0 ? V6.BANK : -V6.BANK;
-      drawCyl(g2, bx, by, phi, v6Phase(t, i), 1 - d * 0.05, d === 0 && side === 0);
+      drawCyl(g2, bx, by, phi, v6Phase(t, i), 1 - d * 0.05, d === 0 && side === 0, side === 1);
     }
   }
   // timing chain in the front-cover plane: crank sprocket up to both banks' cams
