@@ -41,7 +41,7 @@
 </head>
 <body>
 <h1>Silnik benzynowy — W16</h1>
-<div class="sub">Widok wzdłuż wału, kamera 45° w dół · układ W: dwa wąskie V 15° rozchylone pod 90° (±37,5° i ±52,5°) · zapłon co 45°</div>
+<div class="sub">Widok wzdłuż wału, kamera 45° w dół · dwa VR8 (wąskie V 15°) złożone pod kątem 90° — cztery rzędy cylindrów (±37,5° i ±52,5°), 4 wykorbienia × 4 cylindry · zapłon co 45°</div>
 <div class="nav">
   <a href="r4-benzyna.html">R4</a>
   <a href="r6-benzyna.html">R6</a>
@@ -69,7 +69,7 @@
   <span><span class="dot" style="background:#ffb347"></span>Wtrysk paliwa (GDI)</span>
   <span><span class="dot" style="background:#ffe98a"></span>Iskra</span>
 </div>
-<canvas id="c2" width="600" height="860"></canvas>
+<canvas id="c2" width="640" height="780"></canvas>
 <div class="controls">
   <button id="pause">Pauza</button>
   <button id="step">+15°</button>
@@ -82,8 +82,8 @@
 'use strict';
 const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
 const c2 = document.getElementById('c2'), g2 = c2.getContext('2d');
-c2.style.width = '600px'; c2.style.height = '860px';
-c2.width = Math.round(600 * DPR); c2.height = Math.round(860 * DPR);
+c2.style.width = '640px'; c2.style.height = '780px';
+c2.width = Math.round(640 * DPR); c2.height = Math.round(780 * DPR);
 
 const TAU = Math.PI * 2, PI = Math.PI;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -142,7 +142,7 @@ function strokeChip(g, x, y, w, h, ph, label) {
 }
 
 /* ---- shared cylinder geometry ---- */
-const GEO = { R: 22, L: 66, BHW: 16, WALL: 6, PH: 20, CO: 11 };
+const GEO = { R: 26, L: 78, BHW: 19, WALL: 7, PH: 24, CO: 13 };
 const DECK = GEO.R + GEO.L + 22;          // crank center -> deck, along bore axis
 const LINER = 2 * GEO.R + GEO.PH + 22;    // liner length below deck
 
@@ -437,21 +437,20 @@ function drawCyl(g, bx, by, phi, ph, shade, front) {
 /* ---- V6 (canvas 2) ----
    Same camera: each crank throw carries a pair of cylinders at ±30°; throws
    stack up the screen. Even i = right bank, odd = left; fires every 120°. */
-const V6 = { CX: 300, BASE: 780, DX: 0, DY: 75, BANK: 0.9163 };
+const V6 = { CX: 320, BASE: 720, DX: 0, DY: 115, BANK: 0.9163 };
 const v6Phase = (t, i) => (((t - i * PI / 4) % (4 * PI)) + 4 * PI) % (4 * PI);
 
 function renderV6(t) {
   g2.setTransform(DPR, 0, 0, DPR, 0, 0);
-  g2.clearRect(0, 0, 600, 860);
+  g2.clearRect(0, 0, 640, 780);
   g2.fillStyle = '#1e242e';                // block backdrop
-  g2.beginPath(); g2.roundRect(V6.CX - 165, 92, 330, 748, 18); g2.fill();
-  for (let d = 7; d >= 0; d--) {
+  g2.beginPath(); g2.roundRect(V6.CX - 170, 150, 340, 620, 18); g2.fill();
+  for (let d = 3; d >= 0; d--) {           // 4 throws, 4 cylinders each: a true W
     const by = V6.BASE - d * V6.DY;
-    for (const side of [0, 1]) {
-      const i = d * 2 + side;
-      const mag = d % 2 ? 0.6545 : 0.9163;   // inner 37.5° / outer 52.5° banks
-      const phi = side === 0 ? mag : -mag;
-      drawCyl(g2, V6.CX, by, phi, v6Phase(t, i), 1 - d * 0.045, d === 0 && side === 0);
+    for (const side of [0, 1, 2, 3]) {     // outer-R, inner-R, inner-L, outer-L
+      const i = d * 4 + side;
+      const phi = [0.9163, 0.6545, -0.6545, -0.9163][side];
+      drawCyl(g2, V6.CX, by, phi, v6Phase(t, i), 1 - d * 0.08, d === 0 && side === 0);
     }
   }
   // timing chain in the front-cover plane: crank sprocket up to both banks' cams
@@ -468,7 +467,7 @@ function renderV6(t) {
     sprocket(g2, ...rp(13, -camL, V6.BANK), 7, t / 2);
     sprocket(g2, ...rp(-13, -camL, -V6.BANK), 7, t / 2);
   }
-  const w = 64, gap = 5, x0 = 300 - 547 / 2;
+  const w = 64, gap = 5, x0 = 320 - 547 / 2;
   for (let i = 0; i < 16; i++)
     strokeChip(g2, x0 + (i % 8) * (w + gap), 24 + Math.floor(i / 8) * 34, w, 30, v6Phase(t, i), 'C' + (i + 1));
 }
@@ -478,14 +477,14 @@ const OCFG = {
   g: g2, cycle: 4 * PI, twoStroke: false,
   pulses: [...Array(16)].map((_, i) => i * PI / 4), amp: 0.035,
   powerWin: [2 * PI, 3 * PI],
-  hudY: 100, graph: [200, 806, 200, 44], graphLabel: 'p(θ) — cylinder 1',
+  hudY: 100, graph: [220, 726, 200, 44], graphLabel: 'p(θ) — cylinder 1',
   marker: t => t % OCFG.cycle,
   turbo: null,
   labels: [
-    [408, 697, 470, 668, 'Świeca zapłonowa'],
-    [382, 660, 150, 630, 'Kanał dolotowy'],
-    [438, 732, 480, 734, 'Kanał wydechowy'],
-    [300, 780, 470, 758, 'Wał korbowy'],
+    [440, 627, 500, 596, 'Świeca zapłonowa'],
+    [414, 590, 150, 560, 'Kanał dolotowy'],
+    [470, 663, 508, 666, 'Kanał wydechowy'],
+    [320, 720, 500, 700, 'Wał korbowy'],
   ],
 };
 
